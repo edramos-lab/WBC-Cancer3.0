@@ -7,6 +7,7 @@ import uvicorn
 import os
 import torchvision.models as models
 import timm
+import time
 import torchvision.transforms as transforms
 
 app = FastAPI()
@@ -102,12 +103,68 @@ async def predict(model_name: str, file: UploadFile = File(...)):
     image = Image.open(file.file).convert("RGB")
     input_tensor = preprocess_image(image)
 
-    # Make prediction
-    with torch.no_grad():
-        output = model(input_tensor)
-        prediction = torch.argmax(output, dim=1).item()
+    # Check if GPU is available and move the model and tensor to the appropriate device
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device.type == "cuda":
+        model.to(device)
+        input_tensor = input_tensor.to(device)
 
-    return {"prediction": prediction, "class_name": class_names[prediction]}
+        # Measure execution time
+        start_time = time.time()
+
+        # Make prediction
+        with torch.no_grad():
+            output = model(input_tensor)
+            prediction = torch.argmax(output, dim=1).item()
+
+        end_time = time.time()
+        GPU_execution_time = end_time - start_time
+        GPU_fps = 1 / GPU_execution_time
+
+        device = "cpu"
+        model.to(device)
+        input_tensor = input_tensor.to(device)
+
+        # Measure execution time
+        start_time = time.time()
+
+        # Make prediction
+        with torch.no_grad():
+            output = model(input_tensor)
+            prediction = torch.argmax(output, dim=1).item()
+
+        end_time = time.time()
+        CPU_execution_time = end_time - start_time
+        CPU_fps = 1 / CPU_execution_time
+
+        return {
+            "prediction": prediction,
+            "class_name": class_names[prediction],
+            "GPU_execution_time": GPU_execution_time,
+            "GPU_fps": GPU_fps,
+            "CPU_execution_time": CPU_execution_time,
+            "CPU_fps": CPU_fps,
+            "device": str(device)
+        }
+    else:
+        model.to(device)
+        input_tensor = input_tensor.to(device)  # Move the input data to the device
+        start_time = time.time()  # Measure execution time
+        with torch.no_grad():
+            output = model(input_tensor)
+            prediction = torch.argmax(output, dim=1).item()
+        end_time = time.time()
+        CPU_execution_time = end_time - start_time
+        CPU_fps = 1 / CPU_execution_time
+        return {
+            "prediction": prediction,
+            "class_name": class_names[prediction],
+            "execution_time": CPU_execution_time,
+            "fps": CPU_fps,
+            "device": str(device)
+        }
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
