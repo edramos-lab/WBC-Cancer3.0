@@ -135,7 +135,43 @@ async def predict(model_name: str, file: UploadFile = File(...)):
             output = model(input_tensor)
             prediction = torch.argmax(output, dim=1).item()
 
-    return {"prediction": prediction, "class_name": class_names[prediction]}
+        end_time = time.time()
+        CPU_execution_time = end_time - start_time
+        CPU_fps = 1 / CPU_execution_time
+
+      
+        speech_text = f"The prediction of types of B-cell development of Acute Lymphoblastic Leukemia is {class_names[prediction]}. GPU execution time is {GPU_execution_time:.2f} seconds with {GPU_fps:.2f} frames per second. CPU execution time is {CPU_execution_time:.2f} seconds with {CPU_fps:.2f} frames per second."
+        speech = gTTS(text=speech_text, lang='en')
+        speech.save("output.mp3")
+        os.system("mpg321 output.mp3")  # Plays the audio
+
+        return {
+            "prediction": prediction,
+            "class_name": class_names[prediction],
+            "GPU_execution_time": GPU_execution_time,
+            "GPU_fps": GPU_fps,
+            "CPU_execution_time": CPU_execution_time,
+            "CPU_fps": CPU_fps,
+            "device": str(device)
+        }
+    else:
+        model.to(device)
+        input_tensor = input_tensor.to(device)  # Move the input data to the device
+        start_time = time.time()  # Measure execution time
+        with torch.no_grad():
+            output = model(input_tensor)
+            prediction = torch.argmax(output, dim=1).item()
+        end_time = time.time()
+        CPU_execution_time = end_time - start_time
+        CPU_fps = 1 / CPU_execution_time
+        return {
+            "prediction": prediction,
+            "class_name": class_names[prediction],
+            "execution_time": CPU_execution_time,
+            "fps": CPU_fps,
+            "device": str(device)
+        }
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
