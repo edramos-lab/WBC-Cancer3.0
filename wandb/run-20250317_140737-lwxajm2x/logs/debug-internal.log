@@ -1,0 +1,9 @@
+{"time":"2025-03-17T14:07:39.219098489-07:00","level":"INFO","msg":"stream: starting","core version":"0.19.7","symlink path":"/home/edramos/Documents/MLOPS/WBC-Cancer/wandb/run-20250317_140737-lwxajm2x/logs/debug-core.log"}
+{"time":"2025-03-17T14:07:39.326981273-07:00","level":"INFO","msg":"created new stream","id":"lwxajm2x"}
+{"time":"2025-03-17T14:07:39.327032698-07:00","level":"INFO","msg":"stream: started","id":"lwxajm2x"}
+{"time":"2025-03-17T14:07:39.327156872-07:00","level":"INFO","msg":"sender: started","stream_id":"lwxajm2x"}
+{"time":"2025-03-17T14:07:39.327197911-07:00","level":"INFO","msg":"handler: started","stream_id":"lwxajm2x"}
+{"time":"2025-03-17T14:07:39.327164456-07:00","level":"INFO","msg":"writer: Do: started","stream_id":"lwxajm2x"}
+{"time":"2025-03-17T14:07:39.69587027-07:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-03-17T14:07:40.511886257-07:00","level":"WARN","msg":"sender: sendUseArtifact: job builder disabled, skipping"}
+{"time":"2025-03-17T15:23:24.841025445-07:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/graphql\": context deadline exceeded"}

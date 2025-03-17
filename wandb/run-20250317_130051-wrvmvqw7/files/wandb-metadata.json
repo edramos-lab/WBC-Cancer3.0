@@ -1,0 +1,44 @@
+{
+  "os":  "Linux-5.15.0-134-generic-x86_64-with-glibc2.31",
+  "python":  "CPython 3.12.7",
+  "startedAt":  "2025-03-17T20:00:53.568990Z",
+  "args":  [
+    "dev",
+    "main.py"
+  ],
+  "program":  "/home/edramos/miniconda3/envs/pytorch/bin/fastapi",
+  "git":  {
+    "remote":  "https://github.com/edramos-lab/WBC-Cancer.git",
+    "commit":  "3a2a8b0e9d206ed043b255d8f7b4d72cfbd4e2c2"
+  },
+  "email":  "edramos.us@gmail.com",
+  "root":  "/home/edramos/Documents/MLOPS/WBC-Cancer",
+  "host":  "edramos-nitro5",
+  "executable":  "/home/edramos/miniconda3/envs/pytorch/bin/python",
+  "cpu_count":  8,
+  "cpu_count_logical":  16,
+  "gpu":  "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "gpu_count":  1,
+  "disk":  {
+    "/":  {
+      "total":  "942002753536",
+      "used":  "424271753216"
+    }
+  },
+  "memory":  {
+    "total":  "33417277440"
+  },
+  "cpu":  {
+    "count":  8,
+    "countLogical":  16
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "NVIDIA GeForce RTX 3050 Laptop GPU",
+      "memoryTotal":  "4294967296",
+      "cudaCores":  2048,
+      "architecture":  "Ampere"
+    }
+  ],
+  "cudaVersion":  "12.8"
+}
