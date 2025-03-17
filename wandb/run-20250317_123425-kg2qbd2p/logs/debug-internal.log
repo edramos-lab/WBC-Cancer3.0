@@ -1,0 +1,17 @@
+{"time":"2025-03-17T12:34:25.795157487-07:00","level":"INFO","msg":"stream: starting","core version":"0.19.7","symlink path":"/home/edramos/Documents/MLOPS/WBC-Cancer/wandb/run-20250317_123425-kg2qbd2p/logs/debug-core.log"}
+{"time":"2025-03-17T12:34:25.902400422-07:00","level":"INFO","msg":"created new stream","id":"kg2qbd2p"}
+{"time":"2025-03-17T12:34:25.902435797-07:00","level":"INFO","msg":"stream: started","id":"kg2qbd2p"}
+{"time":"2025-03-17T12:34:25.902530054-07:00","level":"INFO","msg":"writer: Do: started","stream_id":"kg2qbd2p"}
+{"time":"2025-03-17T12:34:25.902622083-07:00","level":"INFO","msg":"handler: started","stream_id":"kg2qbd2p"}
+{"time":"2025-03-17T12:34:25.902731675-07:00","level":"INFO","msg":"sender: started","stream_id":"kg2qbd2p"}
+{"time":"2025-03-17T12:34:26.275569684-07:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-03-17T12:34:27.083711512-07:00","level":"WARN","msg":"sender: sendUseArtifact: job builder disabled, skipping"}
+{"time":"2025-03-17T12:39:19.574313947-07:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-03-17T12:39:19.575505823-07:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-03-17T12:39:20.18330244-07:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-03-17T12:39:20.342827345-07:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2025-03-17T12:39:21.349562281-07:00","level":"INFO","msg":"stream: closing","id":"kg2qbd2p"}
+{"time":"2025-03-17T12:39:21.349600651-07:00","level":"INFO","msg":"handler: closed","stream_id":"kg2qbd2p"}
+{"time":"2025-03-17T12:39:21.349618646-07:00","level":"INFO","msg":"writer: Close: closed","stream_id":"kg2qbd2p"}
+{"time":"2025-03-17T12:39:21.349660148-07:00","level":"INFO","msg":"sender: closed","stream_id":"kg2qbd2p"}
+{"time":"2025-03-17T12:39:21.349769258-07:00","level":"INFO","msg":"stream: closed","id":"kg2qbd2p"}
