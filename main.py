@@ -48,7 +48,7 @@ def load_model(wandb_code: str, model_name: str):
     if model_name == 'xception41':
         model = timm.create_model('xception41', pretrained=False)
          # Adjust final layer for 4 classes
-        model.head.fc = torch.nn.Linear(model.head.fc.in_features, 4)
+        #model.head.fc = torch.nn.Linear(model.head.fc.in_features, 4)
     elif model_name == 'inception_v4':
         model = timm.create_model('inception_v4', pretrained=False)
     elif model_name == 'swinT':
@@ -56,18 +56,43 @@ def load_model(wandb_code: str, model_name: str):
     elif model_name == 'convnextv2_tiny':
         model = timm.create_model('convnextv2_tiny', pretrained=False)
     elif model_name == 'deit3':
-        model = timm.create_model('deit3_tiny_patch16_224', pretrained=False)
-    elif model_name == 'efficientNetb0':
+        model = timm.create_model('deit3_base_patch16_224', pretrained=False)
+    elif model_name == 'efficientNet_b0':
         model = timm.create_model('efficientnet_b0', pretrained=False)
+        print(model)  # Print model structure
+    
     else:
         raise ValueError(f"Unsupported model name: {model_name}")
     
-     # Modify the final layer to match the number of classes in your task
-    if hasattr(model, 'head'):
-        in_features = model.head.fc.in_features  # Get the number of input features to the final layer
-        model.head.fc = torch.nn.Linear(in_features, 4)  # Set the output to 4 classes
+  # Print model structure for debugging
+    print(f"\n🔍 Checking structure of {model_name}:")
+    print(model)
+    num_classes=4
+
+    # Identify and replace classification head
+    if hasattr(model, "classifier"):  # EfficientNet, ConvNeXt
+        in_features = model.classifier.in_features
+        model.classifier = torch.nn.Linear(in_features, num_classes)
+    elif hasattr(model, "fc"):  # Some models like ResNet
+        in_features = model.fc.in_features
+        model.fc = torch.nn.Linear(in_features, num_classes)
+    elif hasattr(model, "head"):  # Swin, DeiT3, InceptionV4
+        if hasattr(model.head, "fc"):  # InceptionV4 & some DeiT3 models
+            in_features = model.head.fc.in_features
+            model.head.fc = torch.nn.Linear(in_features, num_classes)
+        elif hasattr(model.head, "classifier"):  # Swin, DeiT variants
+            in_features = model.head.classifier.in_features
+            model.head.classifier = torch.nn.Linear(in_features, num_classes)
+        elif isinstance(model.head, torch.nn.Linear):  # Directly a Linear layer
+            in_features = model.head.in_features
+            model.head = torch.nn.Linear(in_features, num_classes)
+        else:
+            raise AttributeError(f"⚠️ Could not find a replaceable layer in {model_name}")
     else:
-        print("Model does not have a 'head' attribute. Modify accordingly based on model architecture.")
+        raise AttributeError(f"⚠️ No valid classification layer found in {model_name}")
+
+    print(f"✅ Model {model_name} modified successfully!\n")
+    print("Model modified successfully!")
     
     # Load model weights
     model.load_state_dict(torch.load(model_path), strict=False)
@@ -175,3 +200,4 @@ async def predict(model_name: str, file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    
