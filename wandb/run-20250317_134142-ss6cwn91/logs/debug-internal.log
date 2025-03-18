@@ -1,8 +1,0 @@
-{"time":"2025-03-17T13:41:44.083123759-07:00","level":"INFO","msg":"stream: starting","core version":"0.19.7","symlink path":"/home/edramos/Documents/MLOPS/WBC-Cancer/wandb/run-20250317_134142-ss6cwn91/logs/debug-core.log"}
-{"time":"2025-03-17T13:41:44.191005742-07:00","level":"INFO","msg":"created new stream","id":"ss6cwn91"}
-{"time":"2025-03-17T13:41:44.191048497-07:00","level":"INFO","msg":"stream: started","id":"ss6cwn91"}
-{"time":"2025-03-17T13:41:44.191162175-07:00","level":"INFO","msg":"sender: started","stream_id":"ss6cwn91"}
-{"time":"2025-03-17T13:41:44.191145449-07:00","level":"INFO","msg":"writer: Do: started","stream_id":"ss6cwn91"}
-{"time":"2025-03-17T13:41:44.191205608-07:00","level":"INFO","msg":"handler: started","stream_id":"ss6cwn91"}
-{"time":"2025-03-17T13:41:44.639279921-07:00","level":"INFO","msg":"Starting system monitor"}
-{"time":"2025-03-17T13:41:45.454663024-07:00","level":"WARN","msg":"sender: sendUseArtifact: job builder disabled, skipping"}
