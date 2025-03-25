@@ -1,0 +1,40 @@
+2025-03-17 12:58:38,061 INFO    MainThread:144783 [wandb_init.py:setup_run_log_directory():647] Logging user logs to /home/edramos/Documents/MLOPS/WBC-Cancer/wandb/run-20250317_125838-2rsat9r2/logs/debug.log
+2025-03-17 12:58:38,062 INFO    MainThread:144783 [wandb_init.py:setup_run_log_directory():648] Logging internal logs to /home/edramos/Documents/MLOPS/WBC-Cancer/wandb/run-20250317_125838-2rsat9r2/logs/debug-internal.log
+2025-03-17 12:58:38,062 INFO    MainThread:144783 [wandb_init.py:init():761] calling init triggers
+2025-03-17 12:58:38,062 INFO    MainThread:144783 [wandb_init.py:init():766] wandb.init called with sweep_config: {}
+config: {'_wandb': {}}
+2025-03-17 12:58:38,062 INFO    MainThread:144783 [wandb_init.py:init():773] finishing previous run: ukrnh05c
+2025-03-17 12:58:38,062 INFO    MainThread:144783 [wandb_run.py:_finish():2112] finishing run aimfg-california/Blood-Cells-Cancer-ALL/ukrnh05c
+2025-03-17 12:58:38,062 INFO    MainThread:144783 [wandb_run.py:_atexit_cleanup():2342] got exitcode: 0
+2025-03-17 12:58:38,063 INFO    MainThread:144783 [wandb_run.py:_restore():2324] restore
+2025-03-17 12:58:38,063 INFO    MainThread:144783 [wandb_run.py:_restore():2330] restore done
+2025-03-17 12:58:39,746 INFO    MsgRouterThr:144783 [mailbox.py:close():115] Closing mailbox, abandoning 1 handles.
+2025-03-17 12:58:39,746 INFO    MainThread:144783 [wandb_run.py:_footer_history_summary_info():3958] rendering history
+2025-03-17 12:58:39,747 INFO    MainThread:144783 [wandb_run.py:_footer_history_summary_info():3990] rendering summary
+2025-03-17 12:58:39,747 INFO    MainThread:144783 [wandb_run.py:_footer_sync_info():3919] logging synced files
+2025-03-17 12:58:39,748 INFO    MainThread:144783 [wandb_init.py:init():784] starting backend
+2025-03-17 12:58:39,748 INFO    MainThread:144783 [wandb_init.py:init():788] sending inform_init request
+2025-03-17 12:58:39,749 INFO    MainThread:144783 [backend.py:_multiprocessing_setup():97] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2025-03-17 12:58:39,750 INFO    MainThread:144783 [wandb_init.py:init():803] backend started and connected
+2025-03-17 12:58:39,751 INFO    MainThread:144783 [wandb_init.py:init():896] updated telemetry
+2025-03-17 12:58:39,753 INFO    MainThread:144783 [wandb_init.py:init():920] communicating run to backend with 90.0 second timeout
+2025-03-17 12:58:40,221 INFO    MainThread:144783 [wandb_init.py:init():995] starting run threads in backend
+2025-03-17 12:58:40,301 INFO    MainThread:144783 [wandb_run.py:_console_start():2377] atexit reg
+2025-03-17 12:58:40,301 INFO    MainThread:144783 [wandb_run.py:_redirect():2227] redirect: wrap_raw
+2025-03-17 12:58:40,301 INFO    MainThread:144783 [wandb_run.py:_redirect():2292] Wrapping output streams.
+2025-03-17 12:58:40,301 INFO    MainThread:144783 [wandb_run.py:_redirect():2317] Redirects installed.
+2025-03-17 12:58:40,302 INFO    MainThread:144783 [wandb_init.py:init():1037] run started, returning control to user process
+2025-03-17 12:58:49,038 INFO    MainThread:144783 [wandb_init.py:setup_run_log_directory():647] Logging user logs to /home/edramos/Documents/MLOPS/WBC-Cancer/wandb/run-20250317_125849-bsrxi1i7/logs/debug.log
+2025-03-17 12:58:49,038 INFO    MainThread:144783 [wandb_init.py:setup_run_log_directory():648] Logging internal logs to /home/edramos/Documents/MLOPS/WBC-Cancer/wandb/run-20250317_125849-bsrxi1i7/logs/debug-internal.log
+2025-03-17 12:58:49,038 INFO    MainThread:144783 [wandb_init.py:init():761] calling init triggers
+2025-03-17 12:58:49,038 INFO    MainThread:144783 [wandb_init.py:init():766] wandb.init called with sweep_config: {}
+config: {'_wandb': {}}
+2025-03-17 12:58:49,038 INFO    MainThread:144783 [wandb_init.py:init():773] finishing previous run: 2rsat9r2
+2025-03-17 12:58:49,038 INFO    MainThread:144783 [wandb_run.py:_finish():2112] finishing run aimfg-california/Blood-Cells-Cancer-ALL/2rsat9r2
+2025-03-17 12:58:49,039 INFO    MainThread:144783 [wandb_run.py:_atexit_cleanup():2342] got exitcode: 0
+2025-03-17 12:58:49,039 INFO    MainThread:144783 [wandb_run.py:_restore():2324] restore
+2025-03-17 12:58:49,040 INFO    MainThread:144783 [wandb_run.py:_restore():2330] restore done
+2025-03-17 12:58:50,760 INFO    MsgRouterThr:144783 [mailbox.py:close():115] Closing mailbox, abandoning 1 handles.
+2025-03-17 12:58:50,761 INFO    MainThread:144783 [wandb_run.py:_footer_history_summary_info():3958] rendering history
+2025-03-17 12:58:50,761 INFO    MainThread:144783 [wandb_run.py:_footer_history_summary_info():3990] rendering summary
+2025-03-17 12:58:50,761 INFO    MainThread:144783 [wandb_run.py:_footer_sync_info():3919] logging synced files
