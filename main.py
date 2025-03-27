@@ -11,6 +11,7 @@ import time
 import torchvision.transforms as transforms
 from gtts import gTTS
 
+#Instantiate the FastAPI app
 app = FastAPI()
 
 # Preprocessing function
@@ -29,19 +30,15 @@ import timm
 import wandb
 
 def load_model(wandb_code: str, model_name: str):
-    run = wandb.init(project="Blood-Cells-Cancer-ALL", resume="allow", reinit=True)
-    model_path = run.use_artifact(wandb_code).download()
-    
-    if os.path.isdir(model_path):
-        files = os.listdir(model_path)
-        print("📂 Directory contents:", files)  # Debugging
-        
-        model_files = [f for f in files if f.endswith(".pth") or f.endswith(".pt")]
-        if not model_files:
-            raise FileNotFoundError(f"🚨 No model file found in {model_path}")
-        
-        model_path = os.path.join(model_path, model_files[0])
-        print(f"📌 Loading model from: {model_path}")
+    files = os.listdir(model_path)
+    print("📂 Directory contents:", files)  # Debugging
+
+    model_files = [f for f in files if f.endswith(".pth") or f.endswith(".pt")]
+    if not model_files:
+        raise FileNotFoundError(f"🚨 No model file found in {model_path}")
+
+    model_path = os.path.join(model_path, model_files[0])
+    print(f"📌 Loading model from: {model_path}")
 
     # Load the model architecture
     model = timm.create_model(model_name, pretrained=False)
