@@ -2,8 +2,8 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
 import torch
-import wandb
 import uvicorn
+from fastapi.responses import HTMLResponse
 import os
 import torchvision.models as models
 import timm
@@ -24,12 +24,9 @@ def preprocess_image(image: Image.Image):
     return preprocess(image).unsqueeze(0)
 
 # Load model from wandb
-import os
 import torch
-import timm
 import wandb
-
-def load_model(wandb_code: str, model_name: str):
+def load_model(wandb_code: str, model_name: str, model_path:str):
     files = os.listdir(model_path)
     print("📂 Directory contents:", files)  # Debugging
 
@@ -95,14 +92,34 @@ class_names = {
     2: '[Malignant] Pro-B, A more primitive stage of B-cell ALL, possibly Pro-B ALL, which is often aggressive.',
     3: '[Malignant] early Pre-B, Likely an intermediate stage between Pro-B and Pre-B ALL.'
 }
+# Define the API endpoints
 
 @app.post("/predict/{model_name}")
-async def predict(model_name: str, file: UploadFile = File(...)):
+async def predict(model_name: str, model_path: str, file: UploadFile = File(...)):
+    """
+    Endpoint to predict the type of B-cell development in Acute Lymphoblastic Leukemia (ALL) from an uploaded image.
+
+    Parameters:
+    - model_name (str): The name of the model to use for prediction. Must be one of the predefined models in `wandb_codes`.
+    - model_path (str): The directory path where the model weights are stored.
+    - file (UploadFile): The image file uploaded by the user for prediction.
+
+    Returns:
+    - JSON response containing:
+        - prediction (int): The predicted class index.
+        - class_name (str): The description of the predicted class.
+        - confidence (float): The confidence score of the prediction.
+        - GPU_execution_time (float): Time taken for prediction on GPU (if available).
+        - GPU_fps (float): Frames per second on GPU.
+        - CPU_execution_time (float): Time taken for prediction on CPU.
+        - CPU_fps (float): Frames per second on CPU.
+        - device (str): The device used for prediction (CPU or GPU).
+    """
     if model_name not in wandb_codes:
         return JSONResponse(status_code=400, content={"message": "Invalid model name"})
 
     # Load the model
-    model = load_model(wandb_codes[model_name], model_name)
+    model = load_model(wandb_codes[model_name], model_name,model_path)
 
     # Read and preprocess the image
     image = Image.open(file.file).convert("RGB")
@@ -180,6 +197,26 @@ async def predict(model_name: str, file: UploadFile = File(...)):
         }
 
 
+@app.get("/models")
+async def get_available_models():
+    return {"available_models": "xception41, inception_v4, efficientnet_b0, convnextv2_tiny, swin_tiny_patch4_window7_224, deit3_base_patch16_224"}
+@app.get("/about/")
+def about():
+    return HTMLResponse(
+    """
+    <html>
+      <head>
+        <title>My Test API</title>
+      </head>
+      <body>
+        <div align="center">
+          <h1>My Test API</h1>
+        </div>
+      </body>
+    </html>
+    """
+    )
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    print(app.routes)  # 🔍 Check registered routes
+    uvicorn.run(app, host="127.0.0.1", port=8000,reload=True)
     
