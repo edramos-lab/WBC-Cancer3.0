@@ -1,82 +1,28 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from PIL import Image
 import torch
+import wandb
 import uvicorn
-from fastapi.responses import HTMLResponse
 import os
-import torchvision.models as models
-import timm
-import time
 import torchvision.transforms as transforms
 from gtts import gTTS
+import logging
+from typing import Dict, Any, Optional
+import time
+from pathlib import Path
+import torchvision.models as models
+import timm
 
-#Instantiate the FastAPI app
-app = FastAPI()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# Preprocessing function
-def preprocess_image(image: Image.Image):
-    preprocess = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
-    return preprocess(image).unsqueeze(0)
-
-# Load model from wandb
-import torch
-import wandb
-def load_model(wandb_code: str, model_name: str, model_path:str):
-    files = os.listdir(model_path)
-    print("📂 Directory contents:", files)  # Debugging
-
-    model_files = [f for f in files if f.endswith(".pth") or f.endswith(".pt")]
-    if not model_files:
-        raise FileNotFoundError(f"🚨 No model file found in {model_path}")
-
-    model_path = os.path.join(model_path, model_files[0])
-    print(f"📌 Loading model from: {model_path}")
-
-    # Load the model architecture
-    model = timm.create_model(model_name, pretrained=False)
-
-    num_classes = 4  # Number of classes for classification
-
-    # Modify the classifier layer based on model type
-    if hasattr(model, "classifier"):  # EfficientNet, ConvNeXt
-        in_features = model.classifier.in_features
-        model.classifier = torch.nn.Linear(in_features, num_classes)
-    elif hasattr(model, "fc"):  # ResNet and similar architectures
-        in_features = model.fc.in_features
-        model.fc = torch.nn.Linear(in_features, num_classes)
-    elif hasattr(model, "head"):  # Inception, Swin, DeiT
-        if hasattr(model.head, "fc"):  # InceptionV4 & similar models
-            in_features = model.head.fc.in_features
-            model.head.fc = torch.nn.Linear(in_features, num_classes)
-        elif hasattr(model.head, "classifier"):  # Some Swin and DeiT variants
-            in_features = model.head.classifier.in_features
-            model.head.classifier = torch.nn.Linear(in_features, num_classes)
-        elif isinstance(model.head, torch.nn.Linear):  # Directly a Linear layer
-            in_features = model.head.in_features
-            model.head = torch.nn.Linear(in_features, num_classes)
-        else:
-            raise AttributeError(f"⚠️ Could not find a replaceable layer in {model_name}")
-    elif hasattr(model, "last_linear"):  # Check if layer exists
-        model.last_linear = torch.nn.Linear(in_features=1536, out_features=num_classes)
-    else:
-        raise AttributeError(f"⚠️ No valid classification layer found in {model_name}")
-
-    print(f"✅ Model {model_name} modified successfully!\n")
-
-    # Load model weights with strict=False to avoid mismatches
-    model.load_state_dict(torch.load(model_path), strict=False)
-    model.eval()
-
-    return model
-
-
-# Define available wandb RunIDs for each model
-wandb_codes = {
+# Constants
+MODEL_CONFIG = {
     "xception41": "model:v185",
     "inception_v4": "model:v205",
     "efficientnet_b0": "model:v161",
@@ -85,138 +31,180 @@ wandb_codes = {
     "deit3_base_patch16_224": "model:v229"
 }
 
-# Define class names for the predictions
-class_names = {
+CLASS_NAMES = {
     0: 'Benign, Likely refers to normal or non-cancerous B-cells.',
     1: '[Malignant] Pre-B, Malignant precursor B-cells, indicating an early form of B-cell ALL.',
     2: '[Malignant] Pro-B, A more primitive stage of B-cell ALL, possibly Pro-B ALL, which is often aggressive.',
     3: '[Malignant] early Pre-B, Likely an intermediate stage between Pro-B and Pre-B ALL.'
 }
-# Define the API endpoints
+
+NUM_CLASSES = len(CLASS_NAMES)
+IMAGE_SIZE = 224
+AUDIO_OUTPUT_PATH = Path("output.mp3")
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="Blood Cells Cancer Classification API",
+    description="API for classifying blood cells using various deep learning models",
+    version="2.0.0"
+)
+
+class ModelManager:
+    def __init__(self):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.transform = transforms.Compose([
+            transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        self._model_cache = {}
+
+    def preprocess_image(self, image: Image.Image) -> torch.Tensor:
+        """Preprocess the input image for model inference."""
+        try:
+            return self.transform(image).unsqueeze(0)
+        except Exception as e:
+            logger.error(f"Error preprocessing image: {str(e)}")
+            raise HTTPException(status_code=400, detail="Invalid image format")
+
+    def load_model(self, model_name: str) -> torch.nn.Module:
+        """Load model from cache or wandb."""
+        if model_name in self._model_cache:
+            return self._model_cache[model_name]
+
+        try:
+            run = wandb.init(project="Blood-Cells-Cancer-ALL", resume="allow", reinit=True)
+            model_path = run.use_artifact(MODEL_CONFIG[model_name]).download()
+            
+            if os.path.isdir(model_path):
+                model_files = [f for f in os.listdir(model_path) if f.endswith((".pth", ".pt"))]
+                if not model_files:
+                    raise FileNotFoundError(f"No model file found in {model_path}")
+                model_path = os.path.join(model_path, model_files[0])
+
+            model = self._create_model_architecture(model_name)
+            model.load_state_dict(torch.load(model_path), strict=False)
+            model.eval()
+            model.to(self.device)
+            
+            self._model_cache[model_name] = model
+            return model
+
+        except Exception as e:
+            logger.error(f"Error loading model {model_name}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error loading model: {str(e)}")
+
+    def _create_model_architecture(self, model_name: str) -> torch.nn.Module:
+        """Create and configure model architecture."""
+        try:
+            model = timm.create_model(model_name, pretrained=False)
+            
+            if hasattr(model, "classifier"):
+                in_features = model.classifier.in_features
+                model.classifier = torch.nn.Linear(in_features, NUM_CLASSES)
+            elif hasattr(model, "fc"):
+                in_features = model.fc.in_features
+                model.fc = torch.nn.Linear(in_features, NUM_CLASSES)
+            elif hasattr(model, "head"):
+                if hasattr(model.head, "fc"):
+                    in_features = model.head.fc.in_features
+                    model.head.fc = torch.nn.Linear(in_features, NUM_CLASSES)
+                elif hasattr(model.head, "classifier"):
+                    in_features = model.head.classifier.in_features
+                    model.head.classifier = torch.nn.Linear(in_features, NUM_CLASSES)
+                elif isinstance(model.head, torch.nn.Linear):
+                    in_features = model.head.in_features
+                    model.head = torch.nn.Linear(in_features, NUM_CLASSES)
+                else:
+                    raise AttributeError(f"Could not find a replaceable layer in {model_name}")
+            elif hasattr(model, "last_linear"):
+                model.last_linear = torch.nn.Linear(in_features=1536, out_features=NUM_CLASSES)
+            else:
+                raise AttributeError(f"No valid classification layer found in {model_name}")
+
+            return model
+
+        except Exception as e:
+            logger.error(f"Error creating model architecture: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error creating model: {str(e)}")
+
+    def predict(self, model: torch.nn.Module, input_tensor: torch.Tensor) -> Dict[str, Any]:
+        """Make prediction and measure performance."""
+        try:
+            input_tensor = input_tensor.to(self.device)
+            
+            start_time = time.time()
+            with torch.no_grad():
+                output = model(input_tensor)
+                prediction = torch.argmax(output, dim=1).item()
+                confidence = torch.softmax(output, dim=1).max().item()
+            
+            execution_time = time.time() - start_time
+            fps = 1 / execution_time
+
+            return {
+                "prediction": prediction,
+                "class_name": CLASS_NAMES[prediction],
+                "confidence": confidence,
+                "execution_time": execution_time,
+                "fps": fps,
+                "device": str(self.device)
+            }
+
+        except Exception as e:
+            logger.error(f"Error during prediction: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error during prediction: {str(e)}")
+
+    def generate_speech(self, prediction_result: Dict[str, Any]) -> None:
+        """Generate and play speech output."""
+        try:
+            speech_text = (
+                f"The prediction of types of B-cell development of Acute Lymphoblastic Leukemia is "
+                f"{prediction_result['class_name']} with a confidence of {prediction_result['confidence']:.2f}. "
+                f"Execution time is {prediction_result['execution_time']:.2f} seconds with "
+                f"{prediction_result['fps']:.2f} frames per second."
+            )
+            
+            speech = gTTS(text=speech_text, lang='en')
+            speech.save(str(AUDIO_OUTPUT_PATH))
+            os.system("mpg321 output.mp3")
+            
+        except Exception as e:
+            logger.error(f"Error generating speech: {str(e)}")
+            # Don't raise exception as speech is not critical
+
+# Initialize model manager
+model_manager = ModelManager()
 
 @app.post("/predict/{model_name}")
-async def predict(model_name: str, model_path: str, file: UploadFile = File(...)):
-    """
-    Endpoint to predict the type of B-cell development in Acute Lymphoblastic Leukemia (ALL) from an uploaded image.
+async def predict(model_name: str, file: UploadFile = File(...)):
+    """Endpoint for making predictions."""
+    if model_name not in MODEL_CONFIG:
+        raise HTTPException(status_code=400, detail="Invalid model name")
 
-    Parameters:
-    - model_name (str): The name of the model to use for prediction. Must be one of the predefined models in `wandb_codes`.
-    - model_path (str): The directory path where the model weights are stored.
-    - file (UploadFile): The image file uploaded by the user for prediction.
+    try:
+        # Load and preprocess image
+        image = Image.open(file.file).convert("RGB")
+        input_tensor = model_manager.preprocess_image(image)
+        
+        # Load model and make prediction
+        model = model_manager.load_model(model_name)
+        prediction_result = model_manager.predict(model, input_tensor)
+        
+        # Generate speech output
+        model_manager.generate_speech(prediction_result)
+        
+        return prediction_result
 
-    Returns:
-    - JSON response containing:
-        - prediction (int): The predicted class index.
-        - class_name (str): The description of the predicted class.
-        - confidence (float): The confidence score of the prediction.
-        - GPU_execution_time (float): Time taken for prediction on GPU (if available).
-        - GPU_fps (float): Frames per second on GPU.
-        - CPU_execution_time (float): Time taken for prediction on CPU.
-        - CPU_fps (float): Frames per second on CPU.
-        - device (str): The device used for prediction (CPU or GPU).
-    """
-    if model_name not in wandb_codes:
-        return JSONResponse(status_code=400, content={"message": "Invalid model name"})
-
-    # Load the model
-    model = load_model(wandb_codes[model_name], model_name,model_path)
-
-    # Read and preprocess the image
-    image = Image.open(file.file).convert("RGB")
-    input_tensor = preprocess_image(image)
-
-    # Check if GPU is available and move the model and tensor to the appropriate device
-    
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if device.type == "cuda":
-        model.to(device)
-        input_tensor = input_tensor.to(device)
-
-        # Measure execution time
-        start_time = time.time()
-
-        # Make prediction
-        with torch.no_grad():
-            output = model(input_tensor)
-            prediction = torch.argmax(output, dim=1).item()
-
-        end_time = time.time()
-        GPU_execution_time = end_time - start_time
-        GPU_fps = 1 / GPU_execution_time
-
-        device = "cpu"
-        model.to(device)
-        input_tensor = input_tensor.to(device)
-
-        # Measure execution time
-        start_time = time.time()
-
-        # Make prediction
-        with torch.no_grad():
-            output = model(input_tensor)
-            prediction = torch.argmax(output, dim=1).item()
-            confidence = torch.softmax(output, dim=1).max().item()
-
-        end_time = time.time()
-        CPU_execution_time = end_time - start_time
-        CPU_fps = 1 / CPU_execution_time
-
-        speech_text = f"The prediction of types of B-cell development of Acute Lymphoblastic Leukemia is {class_names[prediction]} with a confidence of {confidence:.2f}. GPU execution time is {GPU_execution_time:.2f} seconds with {GPU_fps:.2f} frames per second. CPU execution time is {CPU_execution_time:.2f} seconds with {CPU_fps:.2f} frames per second."
-        speech = gTTS(text=speech_text, lang='en')
-        speech.save("output.mp3")
-        os.system("mpg321 output.mp3")  # Plays the audio
-
-        return {
-            "prediction": prediction,
-            "class_name": class_names[prediction],
-            "confidence": confidence,
-            "GPU_execution_time": GPU_execution_time,
-            "GPU_fps": GPU_fps,
-            "CPU_execution_time": CPU_execution_time,
-            "CPU_fps": CPU_fps,
-            "device": str(device)
-        }
-    else:
-        model.to(device)
-        input_tensor = input_tensor.to(device)  # Move the input data to the device
-        start_time = time.time()  # Measure execution time
-        with torch.no_grad():
-            output = model(input_tensor)
-            prediction = torch.argmax(output, dim=1).item()
-            confidence = torch.softmax(output, dim=1).max().item()
-        end_time = time.time()
-        CPU_execution_time = end_time - start_time
-        CPU_fps = 1 / CPU_execution_time
-        return {
-            "prediction": prediction,
-            "class_name": class_names[prediction],
-            "confidence": confidence,
-            "execution_time": CPU_execution_time,
-            "fps": CPU_fps,
-            "device": str(device)
-        }
-
+    except Exception as e:
+        logger.error(f"Error in predict endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/models")
 async def get_available_models():
-    return {"available_models": "xception41, inception_v4, efficientnet_b0, convnextv2_tiny, swin_tiny_patch4_window7_224, deit3_base_patch16_224"}
-@app.get("/about/")
-def about():
-    return HTMLResponse(
-    """
-    <html>
-      <head>
-        <title>My Test API</title>
-      </head>
-      <body>
-        <div align="center">
-          <h1>My Test API</h1>
-        </div>
-      </body>
-    </html>
-    """
-    )
+    """Endpoint for getting available models."""
+    return {"available_models": list(MODEL_CONFIG.keys())}
+
 if __name__ == "__main__":
-    print(app.routes)  # 🔍 Check registered routes
-    uvicorn.run(app, host="127.0.0.1", port=8000,reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
     
